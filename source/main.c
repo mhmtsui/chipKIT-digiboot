@@ -119,7 +119,7 @@ int main()  // we're called directly by Crt0.S
 	// Always clear out RCON after 'using' it's values, so it doesn't screw things up next time
     // This must occur after the WaitForFinalReset() and checking our program buttons states
     ClearVirtualProgramButton();
-    RCON = 0;
+    RCON &= 0x10;
 	
     // If we are just going to immediately load from flash
     // don't even init the UART or USB, just load the application

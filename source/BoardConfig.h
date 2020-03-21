@@ -782,7 +782,7 @@
 
     //*    Other Peripheral Device settings
     #pragma config FWDTEN   = OFF                           // Watchdog timer enable
-    #pragma config WDTPS    = PS1024                        // Watchdog timer postscaler
+    #pragma config WDTPS    = PS16384                        // Watchdog timer postscaler
 
     //*    Code Protection settings
     #pragma config CP       = OFF                           // Code protection
@@ -1763,7 +1763,7 @@ static inline void __attribute__((always_inline)) ExposeSysClock(void)
 
     //*    Other Peripheral Device settings
     #pragma config FWDTEN       = OFF                               // Watchdog timer enable
-    #pragma config WDTPS        = PS1048576                         // Watchdog timer postscaler
+    #pragma config WDTPS        = PS32768                           // Watchdog timer postscaler
     #pragma config WDTSPGM      = STOP                              // Watchdog Timer Stop During Flash Programming (WDT stops during Flash programming)
     #pragma config WINDIS       = NORMAL                            // Watchdog Timer Window Mode (Watchdog Timer is in non-Window mode)
     #pragma config FWDTWINSZ    = WINSZ_25                          // Watchdog Timer Window Size (Window size is 25%)
