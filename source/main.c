@@ -101,6 +101,11 @@ int main()  // we're called directly by Crt0.S
     // and apply the external reset which this call will ignore.
     WaitForFinalReset();
 
+    //select bank
+    // if bank swap is supported
+#if ((CAPABILITIES & b1CapBankSwap) != 0)
+    select_bank();
+#endif    
     // Determine if there is anything loaded in flash
     fLoadProgramFromFlash = fIsUserAppLoadedInFlash;
 
@@ -933,3 +938,139 @@ static void justInTimeFlashErase(uint32 addrLow, uint32 addrHigh)
 		addrCurPage += FLASH_PAGE_SIZE;
 	}
 }
+
+#if ((CAPABILITIES & b1CapBankSwap))
+/***    void update_flash_serial(uint32 serial, uint32 addr)
+**
+**    Synopsis:   
+**      select the active flash bank
+*
+**    Parameters:
+**      serial serial no. to be written into the flash
+**      addr   address of the flash area to be written 
+* 
+**    Return Values:
+**      None
+**
+**    Errors:
+**      None
+**
+**  Notes:
+**
+**      Only some devices support dual bank
+**
+*/
+static void update_flash_serial(uint32 serial, uint32 addr)
+{
+ /* Function to update the serial number based on address */
+    _flash_serial_update.serial          = serial;
+    _flash_serial_update.checksum_start  = FLASH_SERIAL_CHECKSUM_START;
+    _flash_serial_update.checksum_end    = FLASH_SERIAL_CHECKSUM_END;
+
+    flashWriteUint32(addr, (uint32*) &(_flash_serial_update), 4);
+}
+/***    void swap_bank(uint8 bank)
+**
+**    Synopsis:   
+**      swap to the active flash bank
+*
+**    Parameters:
+**      bank    the bank to be swapped to active
+* 
+**    Return Values:
+**      None
+**
+**    Errors:
+**      None
+**
+**  Notes:
+**
+**      Only some devices support dual bank
+**
+*/
+static void swap_bank(uint8 bank)
+{
+     /* NVMOP can be written only when WREN is zero. So, clear WREN */
+    NVMCONCLR = NVMCON_WREN;
+    // magic unlock sequence
+    NVMKEY = 0xAA996655;
+    NVMKEY = 0x556699AA;
+    
+    if (bank == 0){
+        //swap to bank 0
+        NVMCONCLR = NVMCON_PFSWAP;
+    
+    }else if (bank == 1){
+        //swap to bank 1
+        NVMCONSET = NVMCON_PFSWAP;
+    }
+}
+/***    void select_bank()
+**
+**    Synopsis:   
+**      select the active flash bank
+*
+**    Parameters:
+**      None
+* 
+**    Return Values:
+**      None
+**
+**    Errors:
+**      None
+**
+**  Notes:
+**
+**      Only some devices support dual bank
+**
+*/
+static void select_bank(void)
+{
+    /* Function to Select Appropriate program flash bank based on the serial number */
+        /* Map Program Flash Bank 1 to lower region after a reset */
+        swap_bank(0);
+
+        flash_serial_t *lower_flash_serial = LOWER_FLASH_SERIAL_READ;
+        flash_serial_t *upper_flash_serial = UPPER_FLASH_SERIAL_READ;
+
+        /* If Both Flash Panels do not have any Serial number */
+        if( lower_flash_serial->checksum_start == FLASH_SERIAL_CHECKSUM_CLR &&
+            upper_flash_serial->checksum_start == FLASH_SERIAL_CHECKSUM_CLR)
+        {
+            /* Program Checksum and initial ID's for both panels*/
+            update_flash_serial(0, LOWER_FLASH_SERIAL_START);
+            update_flash_serial(0, UPPER_FLASH_SERIAL_START);
+            DownloadLED_On();
+        }
+        /* If both the panels have proper checksum and serial number*/
+        else if((lower_flash_serial->checksum_start == FLASH_SERIAL_CHECKSUM_START) &&
+            (lower_flash_serial->checksum_end == FLASH_SERIAL_CHECKSUM_END) &&
+            (upper_flash_serial->checksum_start == FLASH_SERIAL_CHECKSUM_START) &&
+            (upper_flash_serial->checksum_end == FLASH_SERIAL_CHECKSUM_END))
+        {
+            /* If Upper flash panel has latest firmware */
+            if(upper_flash_serial->serial > lower_flash_serial->serial)
+            {
+                /* Map Program Flash Bank 2 to lower region */
+                swap_bank(1);
+                DownloadLED_On();
+                /* Perform Dummy Read of Inactive panel(Upper Flash) after BankSwap
+                 * for Swap to take effect
+                 */
+                dummy_read = *(uint32_t *)(UPPER_FLASH_START);
+            }
+        }
+        /* Fallback Case when Panel 1 checksum and serial number is corrupted */
+        else if((upper_flash_serial->checksum_start == FLASH_SERIAL_CHECKSUM_START) &&
+                (upper_flash_serial->checksum_end == FLASH_SERIAL_CHECKSUM_END))
+        {
+            /* Map Program Flash Bank 2 to lower region */
+            swap_bank(1);
+            DownloadLED_On();
+            /* Perform Dummy Read of Inactive panel(Upper Flash) after BankSwap
+             * for Swap to take effect
+             */
+            dummy_read = *(uint32_t *)(UPPER_FLASH_START);
+        }
+}    
+#endif

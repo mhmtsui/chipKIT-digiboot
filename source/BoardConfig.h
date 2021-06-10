@@ -167,6 +167,7 @@
 #define blCapAutoResetListening                         0x00000100ul        // There is a short listening delay after reset for avrdude to upload a sketch before automatically loading the in flash sketch              
 #define blCapProgramButton                              0x00000200ul        // A program button is suppored  
 #define blCapVirtualProgramButton                       0x00000400ul        // A virtual program button is suppored
+#define b1CapBankSwap                                   0x00000800ul        // Bank swapping is supported
 #define blCapLkInstrFullFlashEraseLess4KEEProm          0x00010000ul        // The original bootloader method of erasing all of program flash except the last 4K reserved for eeprom
 #define blCapLkInstrJustInTimeFlashErase                0x00020000ul        // Only flash pages written too needed by the sketch is erased
 #define blCapLkInstrFlashErase                          0x00040000ul        // The linker defines the flash range to erase
@@ -188,6 +189,7 @@
 #define FLASH_START             0x9D000000
 #define USER_APP_ADDR           0x9D001000
 #define DEFAULT_EEPROM_SIZE     4096
+
 
 //************************************************************************
 #if defined(_BOARD_EXAMPLE_MX1_)               
@@ -2918,6 +2920,125 @@ static inline void __attribute__((always_inline)) ExposeSysClock(void)
 
     #define FLASH_BYTES                 (0x20000-0x1000)		    // Leave room one flash block (for bootloader!)
     #define FLASH_PAGE_SIZE             1024						// In bytes
+#elif defined(_BOARD_CHIPKIT_WIFIRE_EF_252MHZ)
+
+#if defined(PUT_CONFIG_BITS_HERE)
+
+     //*    Oscillator Settings
+    // works with proper timing
+    #pragma config POSCMOD      = EC                                // External Clock
+//    #pragma config POSCMOD      = HS                                // Crystal
+
+    #pragma config FPLLIDIV     = DIV_3                             // 8 MHz
+    #pragma config FPLLICLK     = PLL_POSC                          // 8MHz Posc
+
+    #pragma config FNOSC        = SPLL                              // Oscillator selection
+    #pragma config FPLLMULT     = MUL_63                            // 504 MHz
+    #pragma config FPLLODIV     = DIV_2                             // 252 MHz
+
+    #pragma config FPLLRNG      = RANGE_5_10_MHZ                    // 5-10Mhz
+    #pragma config FSOSCEN      = OFF                               // Secondary oscillator enable
+    #pragma config UPLLFSEL     = FREQ_24MHZ                        // USB PLL Input Frequency Selection (USB PLL input is 24 MHz)
+
+    //*    Clock control settings
+    #pragma config IESO         = ON                                // Internal/external clock switchover
+    #pragma config FCKSM        = CSDCMD                            // Clock switching (CSx)/Clock monitor (CMx)
+    #pragma config OSCIOFNC     = OFF                               // Clock output on OSCO pin enable
+
+    //*    Other Peripheral Device settings
+    #pragma config FWDTEN       = OFF                               // Watchdog timer enable
+    #pragma config WDTPS        = PS32768                           // Watchdog timer postscaler
+    #pragma config WDTSPGM      = STOP                              // Watchdog Timer Stop During Flash Programming (WDT stops during Flash programming)
+    #pragma config WINDIS       = NORMAL                            // Watchdog Timer Window Mode (Watchdog Timer is in non-Window mode)
+    #pragma config FWDTWINSZ    = WINSZ_25                          // Watchdog Timer Window Size (Window size is 25%)
+    #pragma config FDMTEN       = OFF                               // Deadman Timer Enable (Deadman Timer is disabled)
+
+    //*    Code Protection settings
+    #pragma config CP           = OFF                               // Code protection
+
+    //*    Debug settings
+//    #pragma config DEBUG       = ON                               // turn debugging on
+    #pragma config ICESEL       = ICS_PGx2                          // ICE pin selection
+
+    #pragma config FETHIO       = ON                                // Standard/alternate ETH pin select (OFF=Alt)
+    #pragma config FMIIEN       = OFF                               // MII/RMII select (OFF=RMII)
+
+    #pragma config BOOTISA  = MIPS32
+
+    //*    USB Settings
+//    #pragma config UPLLEN       = ON                                // USB PLL enable
+    #pragma config FUSBIDIO     = OFF                               // USBID pin control
+
+    #pragma config DMTCNT       = 0
+
+//    #pragma config FDBGWP       = 0
+
+#pragma config PGL1WAY  = OFF             // Permission Group Lock One Way Configuration (Allow only one reconfiguration)
+#pragma config PMDL1WAY = OFF             // Peripheral Module Disable Configuration (Allow only one reconfiguration)
+#pragma config IOL1WAY  = OFF             // Peripheral Pin Select Configuration (Allow only one reconfiguration)
+#pragma config DMTINTV  = WIN_127_128     // DMT Count Window Interval (Window/Interval value is 127/128 counter value)
+#pragma config EJTAGBEN = NORMAL
+#pragma config DBGPER   = PG_ALL
+#pragma config FSLEEP   = OFF
+#pragma config FECCCON  = OFF_UNLOCKED
+#pragma config TRCEN    = OFF
+
+#endif
+
+    #define CAPABILITIES    (b1CapBankSwap | blCapBootLED | blCapDownloadLED | blCapUARTInterface | blCapAutoResetListening | blCapVirtualProgramButton | CAPCOMMON)
+
+    // BTN / LED sense
+    #define LedOn       High
+    #define BntOn       High
+
+    // Boot LED
+    #define BLedLat     G
+    #define BLedBit     6
+
+    // Download LED
+    #define DLedLat     D
+    #define DLedBit     4
+
+    // Virtual program button
+    #define VPBntLat    C
+    #define VPBntBit    12
+
+    // Other capabilities
+    #define LISTEN_BEFORE_LOAD          2000                // no less than 2 seconds
+    #define BOOTLOADER_UART             4                   // avrdude program UART
+    #define BAUDRATE                    115200              // avrdude baudrate
+    #define UARTMapRX()                 (U4RXR = 0b1011)    // RPF2 -> U4RX
+    #define UARTMapTX()                 (RPF8R = 0b0010)    // RF8 -> U4TX
+    #define JTAG                        1                   // have dedicated JTAG pins, turn on JTAG
+
+    #define _CPU_NAME_                  "PIC32MZ2048EFH"
+    #define VEND                        vendDigilent
+    #define PROD                        prodChipKITWiFireEF
+    #define F_CPU                       252000000UL
+//    #define F_CPU                       80000000UL
+    #define F_PBUS                      (F_CPU / (PB2DIVbits.PBDIV + 1))
+
+    #define FLASH_BYTES                 0x200000                    // 2MB
+    #define FLASH_PAGE_SIZE             0x4000                      // 16K
+    #define LoadFlashWaitStates()       (PRECON = 0x32)             // prefetching ON, 2 wait states
+
+    #define FLASH_LENGTH    FLASH_BYTES
+    #define PAGE_SIZE   0x800 //2K
+    #define ERASE_BLOCK_SIZE FLASH_PAGE_SIZE
+    #define LOWER_FLASH_START               (FLASH_START)
+    #define LOWER_FLASH_SERIAL_START        (LOWER_FLASH_START + (FLASH_LENGTH / 2) - PAGE_SIZE)
+    #define LOWER_FLASH_SERIAL_SECTOR       (LOWER_FLASH_START + (FLASH_LENGTH / 2) - ERASE_BLOCK_SIZE)
+
+    #define UPPER_FLASH_START               (FLASH_START + (FLASH_LENGTH / 2))
+    #define UPPER_FLASH_SERIAL_START        (UPPER_FLASH_START + (FLASH_LENGTH / 2) - PAGE_SIZE)
+    #define UPPER_FLASH_SERIAL_SECTOR       (UPPER_FLASH_START + (FLASH_LENGTH / 2) - ERASE_BLOCK_SIZE)
+
+    #define FLASH_SERIAL_CHECKSUM_START     0xDEADBEEF
+    #define FLASH_SERIAL_CHECKSUM_END       0xBEEFDEAD
+    #define FLASH_SERIAL_CHECKSUM_CLR       0xFFFFFFFF
+
+    #define LOWER_FLASH_SERIAL_READ         ((flash_serial_t *)KVA0_2_KVA1(LOWER_FLASH_SERIAL_START))
+    #define UPPER_FLASH_SERIAL_READ         ((flash_serial_t *)KVA0_2_KVA1(UPPER_FLASH_SERIAL_START))
 
 #else
     #error    Board/CPU combination not defined
@@ -3201,6 +3322,12 @@ static inline void __attribute__((always_inline)) ExposeSysClock(void)
     #define ClearVirtualProgramButton()                 (CAT_3(LAT,VPBntLat,CLR) = (1 << VPBntBit))
 #endif
 
+#if ((CAPABILITIES & b1CapBankSwap) == 0)
+// if no bank swap
+#else
+    static void select_bank(void);   
+#endif
+    
 // if no auto reset listen time
 #if ((CAPABILITIES & blCapAutoResetListening) == 0)
         #define LISTEN_BEFORE_LOAD                      0 

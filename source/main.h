@@ -22,6 +22,8 @@
 #define KVA_2_PA(v)             ((v) & 0x1fffffff)
 #define PA_2_KVA0(pa)           ((pa) | 0x80000000)     // cachable
 #define PA_2_KVA1(pa)           ((pa) | 0xa0000000)
+#define KVA0_2_KVA1(a)          ((a)  | 0x20000000)
+#define KVA1_2_KVA0(a)          ((a) & ~0x20000000)
 #define UART_RX_ENABLE          (1<<12)                 /* Enable RX*/
 #define UART_TX_ENABLE         	(1<<10)                 /* Enable TX*/
 #define UART_ENABLE             (1<<15)                 /* UART enable */
@@ -37,6 +39,7 @@
 #define NVMCON_WRERR            0x00002000
 #define NVMCON_WREN             0x00004000
 #define NVMCON_WR               0x00008000
+#define NVMCON_PFSWAP           0x00000080
 
 #define ReadK0(dest) __asm__ __volatile__("mfc0 %0,$16" : "=r" (dest))
 #define WriteK0(src) __asm__ __volatile__("mtc0 %0,$16" : : "r" (src))
@@ -57,6 +60,15 @@ typedef unsigned char bool;
 typedef unsigned char byte;
 typedef unsigned int uint;
 
+typedef struct
+{
+    uint32 checksum_start;
+    uint32 serial;
+    uint32 checksum_end;
+    uint32 dummy;
+} flash_serial_t;
+volatile flash_serial_t __attribute__((coherent)) _flash_serial_update;
+volatile uint32   dummy_read;
 enum {
     false,
     true

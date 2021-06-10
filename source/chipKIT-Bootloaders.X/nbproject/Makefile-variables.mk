@@ -242,3 +242,10 @@ CND_ARTIFACT_PATH_uC32_350=dist/uC32_350/production/chipKIT-Bootloaders.X.produc
 CND_PACKAGE_DIR_uC32_350=${CND_DISTDIR}/uC32_350/package
 CND_PACKAGE_NAME_uC32_350=chipkit-bootloaders.x.tar
 CND_PACKAGE_PATH_uC32_350=${CND_DISTDIR}/uC32_350/package/chipkit-bootloaders.x.tar
+# WiFIRE_EF_252MHz configuration
+CND_ARTIFACT_DIR_WiFIRE_EF_252MHz=dist/WiFIRE_EF_252MHz/production
+CND_ARTIFACT_NAME_WiFIRE_EF_252MHz=chipKIT-Bootloaders.X.production.hex
+CND_ARTIFACT_PATH_WiFIRE_EF_252MHz=dist/WiFIRE_EF_252MHz/production/chipKIT-Bootloaders.X.production.hex
+CND_PACKAGE_DIR_WiFIRE_EF_252MHz=${CND_DISTDIR}/WiFIRE_EF_252MHz/package
+CND_PACKAGE_NAME_WiFIRE_EF_252MHz=chipkit-bootloaders.x.tar
+CND_PACKAGE_PATH_WiFIRE_EF_252MHz=${CND_DISTDIR}/WiFIRE_EF_252MHz/package/chipkit-bootloaders.x.tar
